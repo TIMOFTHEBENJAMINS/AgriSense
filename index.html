@@ -7,13 +7,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
         body { 
             font-family: 'Inter', sans-serif; 
-            background-color: #E8F5E9; /* Light mint background */
+            background-color: #E8F5E9; 
             display: flex;
             justify-content: center;
             padding: 2rem 1rem;
+            min-height: 100vh;
         }
         .main-card {
             background: white;
@@ -37,10 +39,14 @@
             background-color: #FFB300;
             transition: all 0.2s;
         }
-        .yellow-btn:hover { background-color: #FFA000; transform: translateY(-1px); }
-        .yellow-btn:disabled { background-color: #FFECB3; cursor: not-allowed; }
+        .yellow-btn:hover:not(:disabled) { background-color: #FFA000; transform: translateY(-1px); }
+        .yellow-btn:disabled { background-color: #FFECB3; cursor: not-allowed; opacity: 0.6; }
         
-        .prose h1, .prose h2, .prose h3 { color: #1B5E20; font-weight: 800; }
+        /* Markdown Styling */
+        .prose h1, .prose h2, .prose h3 { color: #1B5E20; font-weight: 800; margin-top: 1.5rem; }
+        .prose ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .prose strong { color: #2E7D32; }
+
         .spinner { border-top-color: #2E7D32; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
@@ -57,40 +63,36 @@
             <p class="text-emerald-800 font-semibold text-xl">Identify, Diagnose, & Prevent Plant Illnesses</p>
         </div>
 
-        <div class="text-right mb-4">
-            <button onclick="setApiKey()" id="key-badge" class="text-xs font-bold px-3 py-1 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200">
-                ⚙️ Configure API Key
-            </button>
-        </div>
-
         <div class="mb-10">
-            <h2 class="text-2xl font-bold text-emerald-900 mb-4 text-left">1. Capture or Upload Image</h2>
-            <div class="flex flex-col md:flex-row gap-6 items-start">
+            <h2 class="text-2xl font-bold text-emerald-900 mb-4">1. Capture or Upload Image</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
-                <div id="drop-zone" class="drop-zone w-full md:w-1/2 h-40 rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer p-4">
+                <div id="drop-zone" class="drop-zone h-44 rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer p-4">
                     <p class="text-emerald-900 font-bold text-lg">Drag & Drop Image Here</p>
                     <p class="text-emerald-600 text-sm">or <span class="text-emerald-500 underline font-bold" onclick="document.getElementById('file-input').click()">click to browse</span></p>
                     <input type="file" id="file-input" class="hidden" accept="image/*" onchange="handleFileUpload(this)">
                 </div>
 
-                <div class="w-full md:w-1/2">
-                    <button onclick="initCamera()" class="yellow-btn w-full h-16 rounded-2xl shadow-md flex items-center justify-center gap-3 text-emerald-900 font-extrabold text-lg">
-                        📷 Activate Camera
+                <div class="flex flex-col gap-2">
+                    <button onclick="initCamera()" class="yellow-btn h-20 rounded-2xl shadow-md flex items-center justify-center gap-3 text-emerald-900 font-extrabold text-lg">
+                        📷 Open Live Viewfinder
                     </button>
-                    <p class="text-gray-400 text-xs text-center mt-2 italic">Best for live inspections in the field</p>
+                    <label class="bg-gray-800 h-20 rounded-2xl shadow-md flex items-center justify-center gap-3 text-white font-extrabold text-lg cursor-pointer hover:bg-black">
+                        📸 Use Device Camera App
+                        <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handleFileUpload(this)">
+                    </label>
                 </div>
             </div>
         </div>
 
-        <div id="preview-container" class="hidden mb-10 bg-gray-50 rounded-2xl p-4 border border-gray-100 relative">
+        <div id="preview-container" class="hidden mb-10 bg-gray-900 rounded-2xl p-2 relative overflow-hidden">
             <video id="video" class="w-full max-h-96 object-contain rounded-xl hidden" autoplay playsinline></video>
             <img id="preview-img" class="w-full max-h-96 object-contain rounded-xl hidden">
-            <button id="capture-btn" onclick="takePhoto()" class="hidden absolute bottom-8 left-1/2 -translate-x-1/2 bg-red-600 text-white px-8 py-3 rounded-full font-black shadow-xl hover:bg-red-700">CAPTURE PHOTO</button>
-            <p id="preview-msg" class="text-center text-gray-400 py-20">Upload an image or activate your camera.</p>
+            <button id="capture-btn" onclick="takePhoto()" class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 bg-red-600 text-white px-10 py-3 rounded-full font-black shadow-2xl hover:bg-red-700">CAPTURE</button>
         </div>
 
         <div class="mb-10">
-            <button id="analyze-btn" disabled onclick="startAnalysis()" class="yellow-btn w-full py-4 rounded-xl text-emerald-900 font-black text-xl shadow-lg opacity-50">
+            <button id="analyze-btn" disabled onclick="startAnalysis()" class="yellow-btn w-full py-5 rounded-2xl text-emerald-900 font-black text-2xl shadow-lg">
                 2. Diagnose Plant 🌿
             </button>
         </div>
@@ -101,10 +103,10 @@
                 
                 <div id="loader" class="hidden flex flex-col items-center justify-center py-10">
                     <div class="spinner border-4 border-emerald-100 rounded-full w-12 h-12 mb-4"></div>
-                    <p class="text-emerald-800 font-bold animate-pulse">PlantIQ is analyzing the foliage...</p>
+                    <p class="text-emerald-800 font-bold animate-pulse">PlantIQ AI is diagnosing your crop...</p>
                 </div>
 
-                <div id="report-content" class="prose prose-emerald max-w-none text-emerald-950 italic">
+                <div id="report-content" class="prose prose-emerald max-w-none text-emerald-900/70 italic">
                     Your detailed plant diagnosis and personalized treatment plan will be displayed here after analysis.
                 </div>
             </div>
@@ -112,60 +114,44 @@
     </div>
 
     <script>
+        // 🔑 PASTE YOUR KEY INSIDE THE QUOTES BELOW
+        const API_KEY = "YOUR_GEMINI_API_KEY_HERE";
+        
         let selectedImage = null;
-        let API_KEY = localStorage.getItem('PLANT_IQ_KEY');
         const dropZone = document.getElementById('drop-zone');
         const video = document.getElementById('video');
         const previewImg = document.getElementById('preview-img');
-        const previewMsg = document.getElementById('preview-msg');
         const analyzeBtn = document.getElementById('analyze-btn');
         const captureBtn = document.getElementById('capture-btn');
 
-        if (API_KEY) updateKeyUI();
-
-        function setApiKey() {
-            const key = prompt("Enter your Gemini API Key:");
-            if (key) {
-                localStorage.setItem('PLANT_IQ_KEY', key);
-                API_KEY = key;
-                updateKeyUI();
-            }
-        }
-
-        function updateKeyUI() {
-            document.getElementById('key-badge').textContent = "✅ API Key Loaded";
-            document.getElementById('key-badge').classList.replace('text-gray-500', 'text-green-600');
-        }
-
-        /* DRAG AND DROP LOGIC */
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
-        });
-
-        dropZone.addEventListener('dragover', () => dropZone.classList.add('dragover'));
-        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-        
-        dropZone.addEventListener('drop', (e) => {
-            dropZone.classList.remove('dragover');
-            const file = e.dataTransfer.files[0];
-            processFile(file);
-        });
-
+        /* UPLOAD & DRAG LOGIC */
         function handleFileUpload(input) {
-            processFile(input.files[0]);
+            const file = input.files[0];
+            if (file) processFile(file);
         }
 
         function processFile(file) {
-            if (!file || !file.type.startsWith('image/')) return;
             const reader = new FileReader();
             reader.onload = (e) => {
                 selectedImage = e.target.result;
-                showPreview(selectedImage);
+                previewImg.src = selectedImage;
+                document.getElementById('preview-container').classList.remove('hidden');
+                previewImg.classList.remove('hidden');
+                video.classList.add('hidden');
+                captureBtn.classList.add('hidden');
                 analyzeBtn.disabled = false;
-                analyzeBtn.classList.remove('opacity-50');
             };
             reader.readAsDataURL(file);
         }
+
+        ['dragover', 'dragleave', 'drop'].forEach(e => {
+            dropZone.addEventListener(e, (ev) => {
+                ev.preventDefault();
+                if (e === 'dragover') dropZone.classList.add('dragover');
+                else dropZone.classList.remove('dragover');
+                if (e === 'drop') processFile(ev.dataTransfer.files[0]);
+            });
+        });
 
         /* CAMERA LOGIC */
         async function initCamera() {
@@ -175,10 +161,9 @@
                 document.getElementById('preview-container').classList.remove('hidden');
                 video.classList.remove('hidden');
                 previewImg.classList.add('hidden');
-                previewMsg.classList.add('hidden');
                 captureBtn.classList.remove('hidden');
             } catch (err) {
-                alert("Camera access denied. Please use the upload option.");
+                alert("Could not access camera. Try the 'Device Camera App' button.");
             }
         }
 
@@ -188,28 +173,27 @@
             canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0);
             selectedImage = canvas.toDataURL('image/jpeg');
+            previewImg.src = selectedImage;
             
-            showPreview(selectedImage);
             video.srcObject.getTracks().forEach(t => t.stop());
             video.classList.add('hidden');
+            previewImg.classList.remove('hidden');
             captureBtn.classList.add('hidden');
             analyzeBtn.disabled = false;
-            analyzeBtn.classList.remove('opacity-50');
         }
 
-        function showPreview(src) {
-            document.getElementById('preview-container').classList.remove('hidden');
-            previewImg.src = src;
-            previewImg.classList.remove('hidden');
-            previewMsg.classList.add('hidden');
-        }
-
-        /* AI ANALYSIS */
+        /* AI CORE LOGIC */
         async function startAnalysis() {
-            if (!API_KEY) return setApiKey();
+            if (!API_KEY || API_KEY === "YOUR_GEMINI_API_KEY_HERE") {
+                alert("Error: You haven't added your API Key to the code yet.");
+                return;
+            }
             
-            document.getElementById('loader').classList.remove('hidden');
-            document.getElementById('report-content').classList.add('hidden');
+            const loader = document.getElementById('loader');
+            const content = document.getElementById('report-content');
+            
+            loader.classList.remove('hidden');
+            content.classList.add('hidden');
             analyzeBtn.disabled = true;
 
             try {
@@ -219,7 +203,7 @@
                     body: JSON.stringify({
                         contents: [{
                             parts: [
-                                { text: "Act as a world-class Botanist. 1. Identify the Plant. 2. Diagnose the specific disease or pest issue. 3. Provide a detailed Treatment Plan (Organic and Chemical). 4. Prevention Steps. Use Markdown with bold headers." },
+                                { text: "Act as a professional agricultural expert. 1. Identify the crop/plant. 2. Identify health issues or pests. 3. Detailed Treatment (Organic & Chemical). 4. Prevention steps. Use bold Markdown headers." },
                                 { inline_data: { mime_type: "image/jpeg", data: selectedImage.split(',')[1] } }
                             ]
                         }]
@@ -227,14 +211,26 @@
                 });
 
                 const data = await response.json();
-                const text = data.candidates[0].content.parts[0].text;
-                document.getElementById('report-content').innerHTML = marked.parse(text);
-                document.getElementById('report-content').classList.remove('italic', 'hidden');
+
+                if (data.error) {
+                    throw new Error(`${data.error.message} (Code: ${data.error.code})`);
+                }
+
+                const resultText = data.candidates[0].content.parts[0].text;
+                content.innerHTML = marked.parse(resultText);
+                content.classList.remove('italic', 'hidden');
                 document.getElementById('report-box').scrollIntoView({ behavior: 'smooth' });
+
             } catch (error) {
-                alert("Analysis failed. Please check your API key.");
+                content.innerHTML = `
+                    <div class="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 italic">
+                        <p class="font-bold">Analysis Failed</p>
+                        <p class="text-sm">${error.message}</p>
+                    </div>
+                `;
+                content.classList.remove('hidden');
             } finally {
-                document.getElementById('loader').classList.add('hidden');
+                loader.classList.add('hidden');
                 analyzeBtn.disabled = false;
             }
         }
